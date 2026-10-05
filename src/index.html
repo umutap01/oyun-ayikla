@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oyun Ayıkla</title>
+<style>
+  :root {
+    --zemin: #14161b; --panel: #1c1f26; --kart: #232730; --kenar: #2f3440;
+    --yazi: #e6e8ee; --soluk: #8a91a0; --vurgu: #5b9dff;
+    --kirmizi: #ef5a5a; --sari: #f0b93a; --yesil: #4fc27a;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--zemin); color: var(--yazi); font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+         display: grid; grid-template-columns: 200px 1fr; grid-template-rows: auto 1fr; }
+  header { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+           background: var(--panel); border-bottom: 1px solid var(--kenar); }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header button { white-space: nowrap; }
+  #kokDugme { font-size: 12px; color: var(--soluk); padding: 4px 10px; max-width: 38vw; overflow: hidden; text-overflow: ellipsis; }
+  #kokDugme:hover { color: var(--yazi); }
+  .secici { padding: 16px; }
+  .secici h3 { font-size: 12px; font-weight: 600; color: var(--soluk); margin: 4px 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+  .secici .liste { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+  .secici .liste button { text-align: left; display: flex; justify-content: space-between; gap: 12px; }
+  .secici .liste button span { color: var(--soluk); }
+  .secici .satir { display: flex; gap: 8px; flex-wrap: wrap; }
+  .secici .satir input { flex: 1; min-width: 240px; font: inherit; color: var(--yazi); background: var(--kart);
+                         border: 1px solid var(--kenar); border-radius: 6px; padding: 6px 10px; }
+  .secici .uyari { background: #4a3a14; color: #ffd57a; border-radius: 6px; padding: 8px 12px; margin: 0 0 14px; }
+  .secici .hata { color: #ff9a9a; margin: 10px 0 0; }
+  .secici .not { color: var(--soluk); font-size: 12px; }
+  header .bosluk { flex: 1; }
+  button { font: inherit; color: var(--yazi); background: var(--kart); border: 1px solid var(--kenar);
+           border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  button:hover { border-color: var(--vurgu); }
+  button.tehlike { background: #4a1f23; border-color: #6d2a30; }
+  button.tehlike:hover { border-color: var(--kirmizi); }
+  button.birincil { background: #1f3a66; border-color: #2d5594; }
+
+  nav { overflow-y: auto; background: var(--panel); border-right: 1px solid var(--kenar); padding: 6px 0; }
+  nav a { display: flex; justify-content: space-between; padding: 6px 14px; color: var(--yazi);
+          text-decoration: none; cursor: pointer; }
+  nav a:hover { background: var(--kart); }
+  nav a.secili { background: #1f3a66; }
+  nav a span { color: var(--soluk); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  main { overflow-y: auto; position: relative; }
+  .arac { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+          padding: 10px 16px; background: rgba(20,22,27,.95); border-bottom: 1px solid var(--kenar); }
+  .arac input[type=search], .arac select { font: inherit; color: var(--yazi); background: var(--kart);
+          border: 1px solid var(--kenar); border-radius: 6px; padding: 6px 10px; }
+  .arac input[type=search] { width: 240px; }
+  .arac label { color: var(--soluk); display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .arac .sayac { color: var(--soluk); margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  .izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; padding: 16px; }
+  .izgara.sabit { grid-template-columns: repeat(var(--sutun), minmax(0, 1fr)); }
+  .oyun { background: var(--kart); border: 2px solid transparent; border-radius: 8px; overflow: hidden;
+          cursor: pointer; position: relative; user-select: none; }
+  .oyun:hover { border-color: var(--kenar); }
+  .oyun.secili { border-color: var(--vurgu); box-shadow: 0 0 0 2px rgba(91,157,255,.35); }
+  .oyun.tut { opacity: .55; }
+  .oyun .res { aspect-ratio: 4/3; background: #0d0f13; display: flex; align-items: center; justify-content: center; }
+  .oyun .res img { width: 100%; height: 100%; object-fit: contain; }
+  .oyun .res .yok { color: #444a57; font-size: 12px; }
+  .oyun .bilgi { padding: 8px 10px 10px; }
+  .oyun .ad { font-weight: 600; font-size: 13px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical; overflow: hidden; min-height: 2.5em; }
+  .oyun .alt { display: flex; gap: 8px; margin-top: 4px; color: var(--soluk); font-size: 12px; align-items: center;
+               font-variant-numeric: tabular-nums; }
+  .puan { font-weight: 700; padding: 0 5px; border-radius: 4px; font-size: 12px; }
+  .puan.k { background: #4a1f23; color: #ff9a9a; }
+  .puan.o { background: #4a3a14; color: #ffd57a; }
+  .puan.i { background: #173d27; color: #8ee2ad; }
+  .puan.y { background: #2a2e38; color: var(--soluk); font-weight: 400; }
+  .oyun .rozet { position: absolute; top: 6px; left: 6px; display: flex; gap: 4px; }
+  .oyun .rozet b { background: rgba(0,0,0,.7); font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+  .oyun .islem { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; visibility: hidden; }
+  .oyun:hover .islem { visibility: visible; }
+  .oyun .islem button { padding: 2px 8px; font-size: 12px; background: rgba(0,0,0,.75); }
+  .oyun .isaret { position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; border-radius: 50%;
+                  background: var(--vurgu); display: none; align-items: center; justify-content: center; font-size: 12px; }
+  .oyun.secili .isaret { display: flex; }
+  .oyun.secili .rozet { left: 32px; }
+  .bos { grid-column: 1 / -1; padding: 60px; text-align: center; color: var(--soluk); }
+  #daha { height: 40px; }
+
+  .secimCubugu { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 20;
+                 background: var(--panel); border: 1px solid var(--kenar); border-radius: 10px;
+                 padding: 10px 14px; display: flex; gap: 10px; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+  .bildirim { position: fixed; right: 18px; bottom: 18px; z-index: 30; background: #263041; border: 1px solid #3a4a66;
+              border-radius: 8px; padding: 10px 14px; display: flex; gap: 12px; align-items: center; max-width: 480px; }
+
+  .perde { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 40; display: flex;
+           align-items: center; justify-content: center; padding: 24px; }
+  .pencere { background: var(--panel); border: 1px solid var(--kenar); border-radius: 10px; width: min(960px, 100%);
+             max-height: 100%; overflow: auto; }
+  .pencere .ust { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--kenar);
+                  position: sticky; top: 0; background: var(--panel); }
+  .pencere .ust h2 { margin: 0; font-size: 16px; flex: 1; }
+  .pencere.genis { width: min(1280px, 100%); }
+  .detay { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; padding: 16px; }
+  @media (max-width: 900px) { .detay { grid-template-columns: 1fr; } }
+  .sahne { height: min(48vh, 520px); background: #0d0f13; border-radius: 6px; display: flex;
+           align-items: center; justify-content: center; overflow: hidden; }
+  .sahne img, .sahne video { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+  .sahne .yok { color: #444a57; }
+  .altyazi { color: var(--soluk); font-size: 12px; margin: 6px 0 10px; min-height: 1.4em; word-break: break-all; }
+  .serit h3 { font-size: 12px; font-weight: 600; color: var(--soluk); margin: 10px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .serit .kutu { display: flex; flex-wrap: wrap; gap: 8px; }
+  .kucuk { width: 112px; cursor: pointer; border: 2px solid transparent; border-radius: 6px; background: #0d0f13; padding: 0; }
+  .kucuk:hover { border-color: var(--kenar); }
+  .kucuk.aktif { border-color: var(--vurgu); }
+  .kucuk .res { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .kucuk img { width: 100%; height: 100%; object-fit: contain; }
+  .kucuk span { display: block; font-size: 11px; color: var(--soluk); padding: 2px 4px 4px; white-space: nowrap;
+                overflow: hidden; text-overflow: ellipsis; background: var(--kart); }
+  .serit .not { color: var(--soluk); font-size: 12px; }
+  .copIzgara .oyun { cursor: default; }
+  .kopyaUst { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--kenar); }
+  .kopyaUst select { font: inherit; color: var(--yazi); background: var(--kart); border: 1px solid var(--kenar); border-radius: 6px; padding: 6px 10px; }
+  .kopyaUst .not { color: var(--soluk); font-size: 12px; flex: 1; min-width: 260px; }
+  .grup { border-bottom: 1px solid var(--kenar); padding: 12px 16px; }
+  .grup.atla { opacity: .45; }
+  .grup.sende { background: #2a2414; }
+  .grup .baslik { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 13px; flex-wrap: wrap; }
+  .grup .baslik b { font-weight: 600; }
+  .grup .baslik .neden { color: var(--soluk); }
+  .grup .baslik label { margin-left: auto; color: var(--soluk); display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .grup .kopyalar { display: flex; gap: 10px; flex-wrap: wrap; }
+  .kopya { width: 170px; background: var(--kart); border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; }
+  .kopya:hover { border-color: var(--kenar); }
+  .kopya.kalacak { border-color: var(--yesil); }
+  .kopya:not(.kalacak) .res { filter: grayscale(.8) brightness(.6); }
+  .kopya .res { aspect-ratio: 4/3; background: #0d0f13; display: flex; align-items: center; justify-content: center; }
+  .kopya .res img { width: 100%; height: 100%; object-fit: contain; }
+  .kopya .res .yok { color: #444a57; font-size: 12px; }
+  .kopya .etiket { position: absolute; top: 5px; left: 5px; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+  .kopya.kalacak .etiket { background: var(--yesil); color: #07210f; }
+  .kopya:not(.kalacak) .etiket { background: #6d2a30; color: #ffd0d0; }
+  .kopya .bilgi { padding: 6px 8px 8px; font-size: 12px; }
+  .kopya .sis { font-weight: 700; }
+  .kopya .yol { color: var(--soluk); word-break: break-all; line-height: 1.3; margin-top: 2px; }
+  .kopya .rozetler { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; color: var(--soluk); }
+  .kopyaAlt { position: sticky; bottom: 0; background: var(--panel); border-top: 1px solid var(--kenar);
+              padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .kopyaAlt .ozet { flex: 1; color: var(--soluk); }
+  .altyaziSatir { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+  .altyaziSatir .altyazi { flex: 1; margin: 0; }
+  .cubuk { height: 10px; background: var(--kart); border-radius: 5px; overflow: hidden; }
+  .cubuk i { display: block; height: 100%; background: var(--yesil); transition: width .4s; }
+  .secici code { background: var(--kart); padding: 0 4px; border-radius: 3px; }
+  .serit a { color: var(--vurgu); }
+  .detay dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; }
+  .detay dt { color: var(--soluk); }
+  .detay dd { margin: 0; word-break: break-word; }
+  .detay p { color: #c3c8d2; white-space: pre-line; max-height: 260px; overflow: auto; margin: 0; }
+
+  table.cop { width: 100%; border-collapse: collapse; }
+  table.cop th, table.cop td { padding: 7px 12px; border-bottom: 1px solid var(--kenar); text-align: left; }
+  table.cop th { color: var(--soluk); font-weight: 500; position: sticky; top: 49px; background: var(--panel); }
+  table.cop td.sayi { text-align: right; font-variant-numeric: tabular-nums; }
+  table.cop td.islem button { visibility: hidden; padding: 2px 10px; }
+  table.cop tr:hover td.islem button { visibility: visible; }
+  kbd { background: var(--kart); border: 1px solid var(--kenar); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+  .ipucu { color: var(--soluk); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎮 <span data-t>Oyun Ayıkla</span></h1>
+  <button id="kokDugme" title="Oyun klasörünü değiştir">📁 <span id="kok"></span> · <span data-t>Klasör seç</span></button>
+  <span class="bosluk"></span>
+  <span class="ipucu" id="ipucu"></span>
+  <button id="kopyaDugme">👯 <span data-t>Kopyalar</span></button>
+  <button id="eksikDugme">🖼 <span data-t>Eksik resimler</span></button>
+  <button id="copDugme">🗑 <span data-t>Çöp</span></button>
+  <select id="dil" title="Dil / Language"><option value="tr">TR</option><option value="en">EN</option></select>
+</header>
+<nav id="sistemler"></nav>
+<main id="ana">
+  <div class="arac">
+    <input type="search" id="ara" placeholder="Oyun ara…">
+    <select id="klasor"></select>
+    <select id="sirala">
+      <option value="puan" data-t>Puan (düşük önce)</option>
+      <option value="ad" data-t>Ad</option>
+      <option value="boyut" data-t>Boyut (büyük önce)</option>
+      <option value="oynama" data-t>Oynanma (az önce)</option>
+      <option value="yil" data-t>Yıl</option>
+    </select>
+    <label><input type="checkbox" id="tutGizle" checked> <span data-t>Tutulanları gizle</span></label>
+    <select id="resimSuz" title="Resme göre süz">
+      <option value="" data-t>Tüm oyunlar</option>
+      <option value="var" data-t>Yalnız resimliler</option>
+      <option value="yok" data-t>Yalnız resimsizler</option>
+    </select>
+    <select id="sutun" title="Yan yana kaç oyun gösterilsin (az = büyük resim)"></select>
+    <span class="sayac" id="sayac"></span>
+  </div>
+  <div class="izgara" id="izgara"></div>
+  <div id="daha"></div>
+</main>
+
+<div class="secimCubugu" id="secimCubugu" hidden>
+  <b id="secimSayi"></b>
+  <button class="tehlike" id="secSil"><span data-t>Çöpe taşı</span> <kbd>Del</kbd></button>
+  <button id="secTut"><span data-t>Tut</span> <kbd>T</kbd></button>
+  <button id="secHepsi" data-t>Görünenlerin hepsi</button>
+  <button id="secTemizle"><span data-t>Seçimi kaldır</span> <kbd>Esc</kbd></button>
+</div>
+<div class="bildirim" id="bildirim" hidden></div>
+<div class="perde" id="perde" hidden><div class="pencere" id="pencere"></div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+
+// ---- Dil: Türkçe metin anahtardır; İngilizce karşılığı EN'de. {ad} yer tutucuları t(..., {ad}) ile dolar. ----
+const DIL = (() => { try { return localStorage.getItem('dil'); } catch { return null; } })()
+  || ((navigator.language || '').toLowerCase().startsWith('tr') ? 'tr' : 'en');
+const YEREL = DIL === 'tr' ? 'tr' : 'en';
+const EN = {
+  'Oyun Ayıkla': 'ROM Sorter',
+  'Oyun klasörünü değiştir': 'Change ROM folder',
+  'Klasör seç': 'Choose folder',
+  'Kopyalar': 'Duplicates',
+  'Eksik resimler': 'Missing images',
+  'Çöp': 'Trash',
+  'Oyun ara…': 'Search games…',
+  'Puan (düşük önce)': 'Rating (lowest first)',
+  'Ad': 'Name',
+  'Boyut (büyük önce)': 'Size (largest first)',
+  'Oynanma (az önce)': 'Play count (least first)',
+  'Yıl': 'Year',
+  'Tutulanları gizle': 'Hide kept',
+  'Resme göre süz': 'Filter by image',
+  'Tüm oyunlar': 'All games',
+  'Yalnız resimliler': 'With image only',
+  'Yalnız resimsizler': 'Without image only',
+  'Yan yana kaç oyun gösterilsin (az = büyük resim)': 'Games per row (fewer = bigger images)',
+  'Sütun: otomatik': 'Columns: auto',
+  '{n} yan yana': '{n} per row',
+  'Çöpe taşı': 'Move to trash',
+  'Tut': 'Keep',
+  'Tutma': 'Unkeep',
+  'Görünenlerin hepsi': 'Select all visible',
+  'Seçimi kaldır': 'Clear selection',
+  'İPUCU': 'Click: select · <kbd>Shift</kbd>+click: range · 🔍 / double-click: zoom · <kbd>Del</kbd>: trash · <kbd>T</kbd>: keep',
+  'puan yok': 'no rating',
+  '"{kok}" bulunamadı (kart takılı değil ya da başka bilgisayardasın).': '"{kok}" not found (card not inserted or different computer).',
+  '"{kok}" içinde oyun bulunamadı.': 'No games found in "{kok}".',
+  'Oyun klasörü henüz seçilmedi.': 'No ROM folder selected yet.',
+  'Oyun klasörünü seç': 'Choose ROM folder',
+  'Taranıyor… (ilk açılışta kart okunduğu için birkaç saniye sürebilir)': 'Scanning… (may take a few seconds on first open)',
+  'Tüm klasörler': 'All folders',
+  '(kök)': '(root)',
+  'resim yok': 'no image',
+  'Büyüt · internette resim ara': 'Zoom · search images online',
+  'Sil': 'Delete',
+  'Gösterilecek oyun yok.': 'No games to show.',
+  '{g} görünüyor · {n} oyun · {k} tutuldu': '{g} shown · {n} games · {k} kept',
+  'Bu listede bakılacak oyun kalmadı ✓': 'Nothing left to review in this list ✓',
+  '{n} seçili': '{n} selected',
+  '"{ad}" çöpe taşındı': '"{ad}" moved to trash',
+  '{n} oyun çöpe taşındı': '{n} games moved to trash',
+  ' · {n} hata: {h}': ' · {n} errors: {h}',
+  'Geri alındı': 'Undone',
+  'Geri al': 'Undo',
+  'Karttaki resim': 'Image on card',
+  'Kartta': 'On card',
+  'Karttaki video': 'Video on card',
+  'Video': 'Video',
+  'Önceki (←)': 'Previous (←)',
+  'Sonraki (→)': 'Next (→)',
+  '💾 Karta kaydet': '💾 Save to card',
+  'İnternette': 'Online',
+  "libretro-thumbnails'te aranıyor…": 'Searching libretro-thumbnails…',
+  'Bulunmadıysa:': 'Not found?',
+  "Google Görseller'de ara ↗": 'Search Google Images ↗',
+  'Puan': 'Rating',
+  'Dosya': 'File',
+  'Boyut': 'Size',
+  'Tür': 'Genre',
+  'Geliştirici': 'Developer',
+  'Oyuncu': 'Players',
+  'Oynanma': 'Played',
+  'hiç': 'never',
+  'Kartta resim yok — aşağıdan internettekilere bak': 'No image on card — see online images below',
+  'Kaydediliyor…': 'Saving…',
+  'Kaydedilemedi: {h}': 'Could not save: {h}',
+  '"{ad}" resmi karta kaydedildi, konsolda da görünecek': 'Image for "{ad}" saved to card; it will show on the console too',
+  "Bu sistem libretro-thumbnails'te tanımlı değil.": 'This system is not on libretro-thumbnails.',
+  "libretro-thumbnails'te eşleşen resim bulunamadı.": 'No matching image on libretro-thumbnails.',
+  ' Hata: ': ' Error: ',
+  '≈ benzer ad, doğruluğunu kontrol et · ': '≈ similar name, check it · ',
+  'Bu listede bakılmamış oyun kalmadı ✓': 'No unreviewed games left in this list ✓',
+  'Çöp — {n} oyun, {b}': 'Trash — {n} games, {b}',
+  'Tümünü geri yükle': 'Restore all',
+  'Çöpü kalıcı boşalt': 'Empty trash permanently',
+  'Son silinen': 'Last deleted',
+  '↩ Geri yükle': '↩ Restore',
+  'Çöp boş.': 'Trash is empty.',
+  'Emin misin? {b} kalıcı silinecek — tekrar tıkla': 'Sure? {b} will be deleted permanently — click again',
+  '{n} oyun kalıcı silindi, {b} boşaldı': '{n} games deleted permanently, {b} freed',
+  '{n} oyun geri yüklendi': '{n} games restored',
+  ' · hata: {h}': ' · error: {h}',
+  '🖼 Eksik resimleri indir': '🖼 Download missing images',
+  'EKSIK_ACIKLAMA': `For games without an image, an image whose <b>name matches exactly</b> is downloaded from libretro-thumbnails (box art, else snapshot, else title screen),
+        resized to 640×480, written to <code>downloaded_images</code> on the card and added to <b>gamelist.xml</b>, so it shows on the console too.
+        Each gamelist is backed up first (<code>gamelist.xml.yedek-…</code>).`,
+  'Adı yalnızca benzeyen (≈) oyunlar otomatik indirilmez; onları büyüteçte bakıp "Karta kaydet" ile ekleyebilirsin.':
+    'Games with only a similar name (≈) are not downloaded automatically; open them in zoom view and use "Save to card".',
+  'Yalnız {s} ({n} resimsiz)': 'Only {s} ({n} without image)',
+  'Tüm sistemler': 'All systems',
+  '{a} / {t} oyun (%{y})': '{a} / {t} games ({y}%)',
+  '✓ {k} resim kaydedildi · {b} oyun için tam eşleşme yok': '✓ {k} images saved · no exact match for {b} games',
+  ' · {n} hata': ' · {n} errors',
+  '{n} oyuna resim eklendi': 'Images added to {n} games',
+  '👯 Kopyalar': '👯 Duplicates',
+  '{a} / {t} (%{y})': '{a} / {t} ({y}%)',
+  '✓ {t} kopya çöpe taşındı · {a} oyuna resim/bilgi aktarıldı': '✓ {t} duplicates moved to trash · image/info copied to {a} games',
+  '{n} hata:': '{n} errors:',
+  'İlk taramada tüm dosyaların imzası okunur (birkaç dakika sürebilir); sonrakiler hızlıdır.': 'The first scan reads every file\'s checksum (may take a few minutes); later scans are fast.',
+  '{n} kopya çöpe taşındı': '{n} duplicates moved to trash',
+  '👯 Kopyalar — {n} grup': '👯 Duplicates — {n} groups',
+  'Kartı yeniden tara': 'Rescan card',
+  '↻ Yeniden tara': '↻ Rescan',
+  'Tüm türler ({n})': 'All kinds ({n})',
+  'KOPYA_ACIKLAMA': 'Identical files. Green = kept; click another copy to keep it instead. Groups where several copies have a save file (💾) are yellow and skipped by default.',
+  'Kartta birebir aynı kopya kalmadı ✓': 'No identical copies left on the card ✓',
+  'Önerileri uygula': 'Apply suggestions',
+  'Emin misin? Tekrar tıkla': 'Sure? Click again',
+  '⚠ kayıt birden çok kopyada, sen seç': '⚠ save file in several copies, you choose',
+  'öneri: ': 'suggestion: ',
+  'Bu grubu atla': 'Skip this group',
+  'KALACAK': 'KEEP',
+  'çöpe': 'trash',
+  '💾 kayıt': '💾 save',
+  '{g} grup uygulanacak → {d} kopya çöpe ({b}). Çöpten geri alınabilir.': '{g} groups will be applied → {d} copies to trash ({b}). Can be restored from trash.',
+  'Bu bilgisayarda bulunanlar': 'Found on this computer',
+  'Diskler taranıyor…': 'Scanning drives…',
+  'Başka bir klasör': 'Another folder',
+  'Gözat…': 'Browse…',
+  'Aç': 'Open',
+  'Kartın kökünü ya da içinde nes, snes, gba… klasörleri olan "roms" klasörünü seç.': 'Choose the card root or the "roms" folder that contains nes, snes, gba… folders.',
+  'Klasör taranıyor…': 'Scanning folder…',
+  'Pencere açıldı…': 'Dialog open…',
+  '{n} bilinen sistem klasörü': '{n} known system folders',
+  'Oyun kartına benzeyen bir disk bulunamadı. Kartı takıp pencereyi yeniden aç ya da aşağıdan seç.': 'No drive that looks like a game card was found. Insert the card and reopen this window, or choose below.',
+  'Kart taranıyor… (ilk açılışta 10–20 sn sürebilir)': 'Scanning card… (first open may take 10–20 s)',
+};
+// Sunucudan gelen Türkçe metinler (ilerleme aşamaları, hatalar, kopya gerekçeleri).
+const EN_SUNUCU = {
+  'Eksikler sayılıyor': 'Counting missing images', 'İnternette aranıyor': 'Searching online', 'İndiriliyor': 'Downloading',
+  'gamelist.xml yazılıyor': 'Writing gamelist.xml', 'Bitti': 'Done', 'Hata': 'Error', 'Oyunlar listeleniyor': 'Listing games',
+  'Dosya imzaları okunuyor': 'Reading file checksums', 'Gruplanıyor': 'Grouping',
+  'Resim ve bilgiler aktarılıyor': 'Copying images and info', 'Kopyalar çöpe taşınıyor': 'Moving duplicates to trash',
+  'Zaten çalışıyor': 'Already running', 'Oyun bulunamadı': 'Game not found',
+  'Yalnızca libretro-thumbnails adresleri kabul edilir': 'Only libretro-thumbnails URLs are accepted',
+  'Kapak': 'Box art', 'Ekran': 'Snapshot', 'Başlık': 'Title',
+  'kayıt/oynanma geçmişi olan kopya': 'copy with save/play history', 'renkli oyun → gbc': 'color game → gbc',
+  'siyah-beyaz oyun → gb': 'black & white game → gb', "R36S'te çalışan çekirdek → mame2003": 'core that runs on R36S → mame2003',
+  'kök klasörde / resmi ve puanı olan': 'in root folder / has image and rating', 'ilk kopya': 'first copy',
+};
+const EN_DESEN = [
+  [/^Klasör bulunamadı: /, 'Folder not found: '], [/: tutulacak oyun bulunamadı$/, ': game to keep not found'],
+  [/: bulunamadı$/, ': not found'], [/^yerinde başka dosya var: /, 'another file is in its place: '],
+  [/ içinde alt klasör kopyası$/, ': copy in subfolder'], [/^Japon sürümü → /, 'Japanese release → '],
+  [/^USA\/Avrupa sürümü → /, 'USA/Europe release → '],
+];
+const t = (s, v = {}) => (DIL === 'en' && EN[s] != null ? EN[s] : s).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+const sv = s => {
+  if (DIL !== 'en' || s == null) return s ?? '';
+  s = String(s);
+  if (s.includes(', ')) return s.split(', ').map(sv).join(', ');
+  if (EN_SUNUCU[s] != null) return EN_SUNUCU[s];
+  for (const [d, y] of EN_DESEN) if (d.test(s)) return s.replace(d, y);
+  return s;
+};
+function statikCevir() {
+  document.documentElement.lang = DIL;
+  document.title = t('Oyun Ayıkla');
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.textContent.trim()));
+  document.querySelectorAll('[title]').forEach(el => el.title = t(el.title));
+  $('#ara').placeholder = t('Oyun ara…');
+  $('#ipucu').innerHTML = DIL === 'en' ? EN['İPUCU']
+    : 'Tıkla: seç · <kbd>Shift</kbd>+tıkla: aralık · 🔍 / çift tık: büyüteç · <kbd>Del</kbd>: çöpe · <kbd>T</kbd>: tut';
+  $('#sutun').innerHTML = `<option value="">${t('Sütun: otomatik')}</option>` +
+    Array.from({ length: 14 }, (_, i) => `<option value="${i + 3}">${t('{n} yan yana', { n: i + 3 })}</option>`).join('');
+  $('#dil').value = DIL;
+  $('#dil').onchange = e => { try { localStorage.setItem('dil', e.target.value); } catch {} location.reload(); };
+}
+
+const SAYFA = 120;
+let sistem = null, oyunlar = [], gorunen = [], gosterilen = 0, secim = new Set(), sonTiklanan = null;
+const sayilar = {};
+
+const api = async (yol, govde) => {
+  const r = await fetch(yol, govde ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(govde) } : {});
+  const j = await r.json();
+  if (!r.ok) throw new Error(sv(j.hata) || r.status);
+  return j;
+};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const boyutYaz = b => !b ? '0 KB' : b >= 1 << 30 ? (b / (1 << 30)).toFixed(1) + ' GB' : b >= 1 << 20 ? (b / (1 << 20)).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+const puanEtiket = p => {
+  if (p == null) return `<span class="puan y">${t('puan yok')}</span>`;
+  const v = Math.round(p * 100) / 10, s = v < 5 ? 'k' : v < 7 ? 'o' : 'i';
+  return `<span class="puan ${s}">★ ${v.toFixed(1)}</span>`;
+};
+const resimUrl = o => `/resim?s=${encodeURIComponent(sistem)}&id=${encodeURIComponent(o.id)}${o.v ? '&v=' + o.v : ''}`;
+
+async function sistemleriYukle() {
+  const j = await api('/api/sistemler');
+  $('#kok').textContent = j.kok;
+  const adlar = Object.keys(j.sistemler);
+  if (!j.gecerli || !adlar.length) {
+    $('#sistemler').innerHTML = ''; oyunlar = []; gorunen = [];
+    const neden = !j.kok ? t('Oyun klasörü henüz seçilmedi.')
+                : !j.gecerli ? t('"{kok}" bulunamadı (kart takılı değil ya da başka bilgisayardasın).', { kok: j.kok })
+                             : t('"{kok}" içinde oyun bulunamadı.', { kok: j.kok });
+    $('#izgara').innerHTML = `<div class="bos">${esc(neden)}<br><br><button class="birincil" onclick="klasorSec()">📁 ${t('Oyun klasörünü seç')}</button></div>`;
+    $('#sayac').textContent = '';
+    return klasorSec(neden);
+  }
+  $('#sistemler').innerHTML = adlar.map(s => `<a data-s="${esc(s)}">${esc(s)}<span>${j.sistemler[s]}</span></a>`).join('');
+  $('#sistemler').onclick = e => { const a = e.target.closest('a'); if (a) sistemSec(a.dataset.s); };
+  const kayitli = decodeURIComponent(location.hash.slice(1)) || (() => { try { return localStorage.getItem('sistem'); } catch { return null; } })();
+  sistemSec(adlar.includes(kayitli) ? kayitli : adlar[0]);
+}
+
+async function sistemSec(s) {
+  sistem = s; secim.clear(); sonTiklanan = null;
+  try { localStorage.setItem('sistem', s); } catch {}
+  history.replaceState(null, '', '#' + encodeURIComponent(s));
+  document.querySelectorAll('#sistemler a').forEach(a => a.classList.toggle('secili', a.dataset.s === s));
+  $('#izgara').innerHTML = `<div class="bos">${t('Taranıyor… (ilk açılışta kart okunduğu için birkaç saniye sürebilir)')}</div>`;
+  oyunlar = await api('/api/oyunlar?s=' + encodeURIComponent(s));
+  if (sistem !== s) return;
+  sayiGuncelle();
+  const klasorler = [...new Set(oyunlar.map(o => o.klasor))].sort();
+  $('#klasor').innerHTML = `<option value="*">${t('Tüm klasörler')}</option>` +
+    klasorler.map(k => `<option value="${esc(k)}">${k ? esc(k) : t('(kök)')} — ${oyunlar.filter(o => o.klasor === k).length}</option>`).join('');
+  $('#klasor').hidden = klasorler.length < 2;
+  ciz();
+}
+
+function sayiGuncelle() {
+  sayilar[sistem] = oyunlar.length;
+  const a = document.querySelector(`#sistemler a[data-s="${CSS.escape(sistem)}"] span`);
+  if (a) a.textContent = oyunlar.length;
+}
+
+function suz() {
+  const q = $('#ara').value.trim().toLocaleLowerCase(YEREL);
+  const k = $('#klasor').value, tg = $('#tutGizle').checked, rs = $('#resimSuz').value;
+  const l = oyunlar.filter(o =>
+    (!q || o.ad.toLocaleLowerCase(YEREL).includes(q) || o.dosya.toLocaleLowerCase(YEREL).includes(q)) &&
+    (k === '*' || o.klasor === k) && !(tg && o.tut) && (!rs || (rs === 'var') === o.resim));
+  const s = $('#sirala').value, adK = (a, b) => a.ad.localeCompare(b.ad, YEREL);
+  const cmp = {
+    puan: (a, b) => (a.puan ?? 9) - (b.puan ?? 9) || adK(a, b),
+    ad: adK,
+    boyut: (a, b) => b.boyut - a.boyut,
+    oynama: (a, b) => a.oynama - b.oynama || (a.puan ?? 9) - (b.puan ?? 9),
+    yil: (a, b) => (a.yil || '9999').localeCompare(b.yil || '9999') || adK(a, b),
+  }[s];
+  return l.sort(cmp);
+}
+
+function kartHtml(o) {
+  const res = o.resim ? `<img loading="lazy" src="${resimUrl(o)}" alt="">` : `<span class="yok">${t('resim yok')}</span>`;
+  const rozet = [o.oynama ? `▶ ${o.oynama}` : '', o.video ? '🎬' : ''].filter(Boolean).map(r => `<b>${r}</b>`).join('');
+  return `<div class="oyun${secim.has(o.id) ? ' secili' : ''}${o.tut ? ' tut' : ''}" data-id="${esc(o.id)}" title="${esc(o.dosya)}">
+    <div class="res">${res}</div>
+    <span class="isaret">✓</span><span class="rozet">${rozet}</span>
+    <span class="islem"><button data-is="buyut" title="${t('Büyüt · internette resim ara')}">🔍</button><button data-is="tut">${o.tut ? t('Tutma') : t('Tut')}</button><button data-is="sil" class="tehlike">${t('Sil')}</button></span>
+    <div class="bilgi"><div class="ad">${esc(o.ad)}</div>
+      <div class="alt">${puanEtiket(o.puan)}<span>${esc(o.yil)}</span><span style="margin-left:auto">${boyutYaz(o.boyut)}</span></div>
+      ${o.klasor ? `<div class="alt">📁 ${esc(o.klasor)}</div>` : ''}
+    </div></div>`;
+}
+
+function ciz() {
+  gorunen = suz(); gosterilen = 0;
+  $('#izgara').innerHTML = gorunen.length ? '' : `<div class="bos">${t('Gösterilecek oyun yok.')}</div>`;
+  $('#ana').scrollTop = 0;
+  dahaCiz(); sayacGuncelle();
+}
+function dahaCiz() {
+  const parca = gorunen.slice(gosterilen, gosterilen + SAYFA);
+  $('#izgara').insertAdjacentHTML('beforeend', parca.map(kartHtml).join(''));
+  gosterilen += parca.length;
+}
+new IntersectionObserver(e => { if (e[0].isIntersecting && gosterilen < gorunen.length) dahaCiz(); },
+  { root: $('#ana'), rootMargin: '800px' }).observe($('#daha'));
+
+function sayacGuncelle() {
+  const tut = oyunlar.filter(o => o.tut).length;
+  $('#sayac').textContent = t('{g} görünüyor · {n} oyun · {k} tutuldu', { g: gorunen.length, n: oyunlar.length, k: tut });
+  if (!gorunen.length && !$('#izgara').children.length)
+    $('#izgara').innerHTML = `<div class="bos">${t('Bu listede bakılacak oyun kalmadı ✓')}</div>`;
+  $('#secimCubugu').hidden = !secim.size;
+  $('#secimSayi').textContent = t('{n} seçili', { n: secim.size });
+}
+function kartYenile(id) {
+  const el = document.querySelector(`.oyun[data-id="${CSS.escape(id)}"]`);
+  const o = oyunlar.find(x => x.id === id);
+  if (el && o) el.outerHTML = kartHtml(o);
+}
+
+$('#izgara').addEventListener('click', e => {
+  const kart = e.target.closest('.oyun'); if (!kart) return;
+  const id = kart.dataset.id, is = e.target.closest('button')?.dataset.is;
+  if (is === 'buyut') return detay(id);
+  if (is === 'sil') return sil([id]);
+  if (is === 'tut') return tut([id], !oyunlar.find(o => o.id === id).tut);
+  if (e.shiftKey && sonTiklanan) {
+    const ids = gorunen.map(o => o.id), a = ids.indexOf(sonTiklanan), b = ids.indexOf(id);
+    ids.slice(Math.min(a, b), Math.max(a, b) + 1).forEach(x => secim.add(x));
+    document.querySelectorAll('.oyun').forEach(k => k.classList.toggle('secili', secim.has(k.dataset.id)));
+  } else {
+    secim.has(id) ? secim.delete(id) : secim.add(id);
+    kart.classList.toggle('secili', secim.has(id));
+  }
+  sonTiklanan = id; sayacGuncelle();
+});
+$('#izgara').addEventListener('dblclick', e => {
+  const kart = e.target.closest('.oyun'); if (kart && !e.target.closest('button')) detay(kart.dataset.id);
+});
+
+async function sil(ids) {
+  const j = await api('/api/sil', { s: sistem, ids });
+  const gitti = new Set(j.tasinan);
+  const adlar = oyunlar.filter(o => gitti.has(o.id)).map(o => o.ad);
+  oyunlar = oyunlar.filter(o => !gitti.has(o.id));
+  gitti.forEach(id => { secim.delete(id); document.querySelector(`.oyun[data-id="${CSS.escape(id)}"]`)?.remove(); });
+  gorunen = gorunen.filter(o => !gitti.has(o.id)); gosterilen = document.querySelectorAll('.oyun').length;
+  sayiGuncelle(); sayacGuncelle(); perdeKapat();
+  const metin = adlar.length === 1 ? t('"{ad}" çöpe taşındı', { ad: adlar[0] }) : t('{n} oyun çöpe taşındı', { n: adlar.length });
+  bildir(metin + (j.hatalar.length ? t(' · {n} hata: {h}', { n: j.hatalar.length, h: sv(j.hatalar[0]) }) : ''), j.kids.length && (async () => {
+    await api('/api/geri', { kids: j.kids }); bildir(t('Geri alındı')); sistemSec(sistem);
+  }));
+  if (gosterilen < SAYFA / 2 && gosterilen < gorunen.length) dahaCiz();
+}
+
+async function tut(ids, deger) {
+  await api('/api/isaret', { s: sistem, ids, deger });
+  ids.forEach(id => { const o = oyunlar.find(x => x.id === id); if (o) o.tut = deger; });
+  if ($('#tutGizle').checked && deger) {
+    const set = new Set(ids);
+    ids.forEach(id => { secim.delete(id); document.querySelector(`.oyun[data-id="${CSS.escape(id)}"]`)?.remove(); });
+    gorunen = gorunen.filter(o => !set.has(o.id)); gosterilen = document.querySelectorAll('.oyun').length;
+  } else ids.forEach(kartYenile);
+  sayacGuncelle();
+}
+
+let bildirimZaman;
+function bildir(metin, geriAl) {
+  const b = $('#bildirim');
+  b.innerHTML = `<span>${esc(metin)}</span>` + (geriAl ? `<button class="birincil">${t('Geri al')}</button>` : '');
+  if (geriAl) b.querySelector('button').onclick = () => { b.hidden = true; geriAl(); };
+  b.hidden = false; clearTimeout(bildirimZaman);
+  bildirimZaman = setTimeout(() => b.hidden = true, 8000);
+}
+
+let buyutecId = null;
+function perdeAc(html, genis = false) {
+  $('#pencere').innerHTML = html; $('#pencere').classList.toggle('genis', genis); $('#perde').hidden = false;
+}
+function perdeKapat() { $('#perde').hidden = true; $('#pencere').innerHTML = ''; buyutecId = null; }
+$('#perde').addEventListener('click', e => { if (e.target.id === 'perde' || e.target.dataset.kapat != null) perdeKapat(); });
+
+// Büyüteç: karttaki resim büyük, altında internetten (libretro-thumbnails) bulunan diğer resimler.
+function detay(id) {
+  const o = oyunlar.find(x => x.id === id); if (!o) return;
+  buyutecId = id;
+  const sira = gorunen.findIndex(x => x.id === id);
+  const v = `/video?s=${encodeURIComponent(sistem)}&id=${encodeURIComponent(o.id)}`;
+  const google = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(`${o.ad} ${sistem} game`);
+  const kartta = [
+    o.resim && `<button class="kucuk" data-src="${resimUrl(o)}" data-ad="${t('Karttaki resim')}"><div class="res"><img src="${resimUrl(o)}" alt=""></div><span>${t('Kartta')}</span></button>`,
+    o.video && `<button class="kucuk" data-video="${v}" data-ad="${t('Karttaki video')}"><div class="res">🎬</div><span>${t('Video')}</span></button>`,
+  ].filter(Boolean).join('');
+  perdeAc(`<div class="ust"><h2>${esc(o.ad)}</h2>
+      <span class="ipucu">${sira + 1} / ${gorunen.length}</span>
+      <button data-d="onceki" title="${t('Önceki (←)')}">←</button><button data-d="sonraki" title="${t('Sonraki (→)')}">→</button>
+      <button data-d="tut">${o.tut ? t('Tutma') : t('Tut') + ' <kbd>T</kbd>'}</button><button class="tehlike" data-d="sil">${t('Çöpe taşı')} <kbd>Del</kbd></button>
+      <button data-kapat>✕</button></div>
+    <div class="detay"><div>
+      <div class="sahne" id="sahne"></div>
+      <div class="altyaziSatir"><span class="altyazi" id="altyazi"></span><button class="birincil" id="kartaKaydet" hidden>${t('💾 Karta kaydet')}</button></div>
+      <div class="serit">
+        ${kartta ? `<h3>${t('Kartta')}</h3><div class="kutu">${kartta}</div>` : ''}
+        <h3>${t('İnternette')}</h3><div class="kutu" id="internet"><span class="not">${t("libretro-thumbnails'te aranıyor…")}</span></div>
+        <p class="not">${t('Bulunmadıysa:')} <a href="${google}" target="_blank" rel="noopener">${t("Google Görseller'de ara ↗")}</a></p>
+      </div></div>
+      <div><dl>
+        <dt>${t('Puan')}</dt><dd>${puanEtiket(o.puan)}</dd>
+        <dt>${t('Dosya')}</dt><dd>${esc(o.klasor ? o.klasor + '/' : '')}${esc(o.dosya)}</dd>
+        <dt>${t('Boyut')}</dt><dd>${boyutYaz(o.boyut)}</dd>
+        ${o.yil ? `<dt>${t('Yıl')}</dt><dd>${esc(o.yil)}</dd>` : ''}
+        ${o.tur ? `<dt>${t('Tür')}</dt><dd>${esc(o.tur)}</dd>` : ''}
+        ${o.gelistirici ? `<dt>${t('Geliştirici')}</dt><dd>${esc(o.gelistirici)}</dd>` : ''}
+        ${o.oyuncu ? `<dt>${t('Oyuncu')}</dt><dd>${esc(o.oyuncu)}</dd>` : ''}
+        <dt>${t('Oynanma')}</dt><dd>${o.oynama || t('hiç')}</dd>
+      </dl>${o.aciklama ? `<p>${esc(o.aciklama)}</p>` : ''}</div></div>`, true);
+  const p = $('#pencere');
+  p.querySelector('[data-d=onceki]').onclick = () => buyutecGit(-1);
+  p.querySelector('[data-d=sonraki]').onclick = () => buyutecGit(1);
+  p.querySelector('[data-d=sil]').onclick = () => buyutecSil();
+  p.querySelector('[data-d=tut]').onclick = () => buyutecTut(!o.tut);
+  p.querySelector('.serit').addEventListener('click', e => { const k = e.target.closest('.kucuk'); if (k) sahneGoster(k); });
+  const ilk = p.querySelector('.kucuk');
+  ilk ? sahneGoster(ilk) : ($('#sahne').innerHTML = `<span class="yok">${t('Kartta resim yok — aşağıdan internettekilere bak')}</span>`);
+  internetAra(o);
+}
+
+function sahneGoster(k) {
+  document.querySelectorAll('.kucuk.aktif').forEach(x => x.classList.remove('aktif'));
+  k.classList.add('aktif');
+  $('#sahne').innerHTML = k.dataset.video
+    ? `<video src="${k.dataset.video}" controls muted autoplay loop></video>`
+    : `<img src="${k.dataset.src}" alt="">`;
+  $('#altyazi').textContent = k.dataset.ad;
+  $('#kartaKaydet').hidden = !(k.dataset.src || '').startsWith('https://');
+  $('#kartaKaydet').onclick = () => kartaKaydet(k.dataset.src);
+}
+
+// Büyüteçte seçilen internet resmini karta kaydeder; gamelist.xml'e işlendiği için konsolda da görünür.
+async function kartaKaydet(url) {
+  const o = oyunlar.find(x => x.id === buyutecId); if (!o) return;
+  const b = $('#kartaKaydet'); b.disabled = true; b.textContent = t('Kaydediliyor…');
+  try { await api('/api/resim-kaydet', { s: sistem, id: o.id, url }); }
+  catch (e) { b.disabled = false; b.textContent = t('💾 Karta kaydet'); return bildir(t('Kaydedilemedi: {h}', { h: e.message })); }
+  o.resim = true; o.v = Date.now();
+  kartYenile(o.id); detay(o.id);
+  bildir(t('"{ad}" resmi karta kaydedildi, konsolda da görünecek', { ad: o.ad }));
+}
+
+async function internetAra(o) {
+  const id = o.id, s = sistem;
+  let j;
+  try { j = await api(`/api/internet?s=${encodeURIComponent(s)}&id=${encodeURIComponent(id)}`); }
+  catch (e) { j = { resimler: [], hatalar: [e.message] }; }
+  if (buyutecId !== id || sistem !== s) return;  // bu arada başka oyuna geçildi
+  const kutu = $('#internet');
+  if (!j.resimler.length) {
+    kutu.innerHTML = `<span class="not">${j.desteklenmiyor ? t("Bu sistem libretro-thumbnails'te tanımlı değil.")
+      : t("libretro-thumbnails'te eşleşen resim bulunamadı.")}${j.hatalar.length ? t(' Hata: ') + esc(sv(j.hatalar[0])) : ''}</span>`;
+    return;
+  }
+  kutu.innerHTML = j.resimler.map(r => {
+    const bolge = (r.ad.match(/\(([^)]*)\)/) || [])[1] || '';
+    return `<button class="kucuk" data-src="${esc(r.url)}" data-ad="${esc(`libretro · ${sv(r.tur)} · ${r.benzer ? t('≈ benzer ad, doğruluğunu kontrol et · ') : ''}${r.ad}`)}" title="${esc(r.ad)}">
+      <div class="res"><img loading="lazy" src="${esc(r.url)}" alt="" onerror="this.closest('.kucuk').remove()"></div>
+      <span>${r.benzer ? '≈ ' : ''}${esc(sv(r.tur))}${bolge ? ' · ' + esc(bolge) : ''}</span></button>`;
+  }).join('');
+  if (!o.resim && !o.video) sahneGoster(kutu.querySelector('.kucuk'));
+}
+
+function buyutecGit(adim) {
+  const i = gorunen.findIndex(x => x.id === buyutecId);
+  const hedef = gorunen[i + adim];
+  if (hedef) detay(hedef.id);
+}
+// Karar verilmemiş (tutulmamış) sıradaki oyun: önce ileri, sonra baştan; yoksa undefined.
+function sonrakiKararsiz(id) {
+  const i = gorunen.findIndex(x => x.id === id);
+  const sira = [...gorunen.slice(i + 1), ...gorunen.slice(0, Math.max(i, 0))];
+  return sira.find(x => !x.tut && x.id !== id)?.id;
+}
+function sonrakineGec(sonraki, mesaj = true) {
+  if (sonraki) return detay(sonraki);
+  perdeKapat();
+  if (mesaj) bildir(t('Bu listede bakılmamış oyun kalmadı ✓'));
+}
+async function buyutecSil() {
+  const id = buyutecId, sonraki = sonrakiKararsiz(id);
+  await sil([id]);
+  sonrakineGec(sonraki, false);  // "Geri al" bildirimi ekranda kalsın
+}
+async function buyutecTut(deger = true) {
+  const o = oyunlar.find(x => x.id === buyutecId), sonraki = sonrakiKararsiz(o.id);
+  if (o.tut !== deger) await tut([o.id], deger);
+  deger ? sonrakineGec(sonraki) : detay(o.id);
+}
+
+async function copAc() {
+  const kayit = (await api('/api/cop')).reverse();
+  const toplam = kayit.reduce((t, k) => t + (k.boyut || 0), 0);
+  perdeAc(`<div class="ust"><h2>${t('Çöp — {n} oyun, {b}', { n: kayit.length, b: boyutYaz(toplam) })}</h2>
+      ${kayit.length ? `<button data-c="hepsi">${t('Tümünü geri yükle')}</button><button class="tehlike" data-c="bosalt">${t('Çöpü kalıcı boşalt')}</button>` : ''}
+      <button data-kapat>✕</button></div>
+    ${kayit.length ? `<div class="izgara copIzgara">
+      ${kayit.map((k, i) => `<div class="oyun" title="${esc(k.id)}">
+        <div class="res"><img loading="lazy" src="/cop-resim?kid=${k.kid}" alt=""
+          onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'yok', textContent: '${t('resim yok')}'}))"></div>
+        ${i === 0 ? `<span class="rozet"><b>${t('Son silinen')}</b></span>` : ''}
+        <span class="islem"><button class="birincil" data-kid="${k.kid}">${t('↩ Geri yükle')}</button></span>
+        <div class="bilgi"><div class="ad">${esc(k.ad)}</div>
+          <div class="alt"><span>${esc(k.sistem)}</span><span style="margin-left:auto">${boyutYaz(k.boyut || 0)}</span></div>
+          <div class="alt">🕒 ${esc(k.zaman)}</div>
+        </div></div>`).join('')}
+      </div>` : `<div class="bos">${t('Çöp boş.')}</div>`}`, true);
+  const p = $('#pencere');
+  p.querySelectorAll('[data-kid]').forEach(b => b.onclick = () => geriYukle([b.dataset.kid]));
+  p.querySelector('[data-c=hepsi]')?.addEventListener('click', () => geriYukle(kayit.map(k => k.kid)));
+  const bosalt = p.querySelector('[data-c=bosalt]');
+  bosalt?.addEventListener('click', async () => {
+    if (!bosalt.dataset.emin) { bosalt.dataset.emin = 1; bosalt.textContent = t('Emin misin? {b} kalıcı silinecek — tekrar tıkla', { b: boyutYaz(toplam) }); return; }
+    const j = await api('/api/cop-bosalt', {});
+    bildir(t('{n} oyun kalıcı silindi, {b} boşaldı', { n: j.silinen, b: boyutYaz(j.boyut) })); copAc();
+  });
+}
+async function geriYukle(kids) {
+  const j = await api('/api/geri', { kids });
+  bildir(t('{n} oyun geri yüklendi', { n: j.geri.length }) + (j.hatalar.length ? t(' · hata: {h}', { h: sv(j.hatalar[0]) }) : ''));
+  copAc(); sistemSec(sistem);
+}
+$('#copDugme').onclick = copAc;
+
+// Resmi olmayan oyunlara libretro'dan tam eşleşen resmi indirip gamelist.xml'e işler.
+let topluZaman;
+async function eksikResimler() {
+  const buSistem = oyunlar.filter(o => !o.resim).length;
+  const aciklama = DIL === 'en' ? EN['EKSIK_ACIKLAMA']
+    : `Resmi olmayan oyunlar için libretro-thumbnails'ten <b>adı tam eşleşen</b> resim indirilir (kapak, yoksa ekran,
+        yoksa başlık), 640×480'e küçültülüp kartta <code>downloaded_images</code> içine yazılır ve
+        <b>gamelist.xml</b>'e işlenir, böylece konsolda da görünür. Her gamelist'in önce yedeği alınır
+        (<code>gamelist.xml.yedek-…</code>).`;
+  perdeAc(`<div class="ust"><h2>${t('🖼 Eksik resimleri indir')}</h2><button data-kapat>✕</button></div>
+    <div class="secici">
+      <p>${aciklama}</p>
+      <p class="not">${t('Adı yalnızca benzeyen (≈) oyunlar otomatik indirilmez; onları büyüteçte bakıp "Karta kaydet" ile ekleyebilirsin.')}</p>
+      <div class="satir" style="margin:14px 0">
+        <button class="birincil" data-t="bu" ${buSistem ? '' : 'disabled'}>${t('Yalnız {s} ({n} resimsiz)', { s: esc(sistem), n: buSistem })}</button>
+        <button data-t="hepsi">${t('Tüm sistemler')}</button>
+      </div>
+      <div id="topluDurum"></div>
+    </div>`);
+  $('#pencere').querySelector('[data-t=bu]').onclick = () => topluBaslat([sistem]);
+  $('#pencere').querySelector('[data-t=hepsi]').onclick = () => topluBaslat(null);
+  const d = await api('/api/toplu-durum');
+  if (d.calisiyor) topluIzle();
+}
+async function topluBaslat(sistemler) {
+  try { await api('/api/toplu-resim', { sistemler }); } catch (e) { return bildir(e.message); }
+  topluIzle();
+}
+function topluIzle() {
+  clearInterval(topluZaman);
+  $('#pencere').querySelectorAll('[data-t]').forEach(b => b.disabled = true);
+  const guncelle = async () => {
+    const d = await api('/api/toplu-durum');
+    const kutu = $('#topluDurum');
+    if (kutu) {
+      const yuzde = d.toplam ? Math.round(d.bakilan / d.toplam * 100) : 0;
+      kutu.innerHTML = `<div class="cubuk"><i style="width:${yuzde}%"></i></div>
+        <p>${esc(sv(d.asama))}${d.sistem ? ' · ' + esc(d.sistem) : ''} — ${t('{a} / {t} oyun (%{y})', { a: d.bakilan, t: d.toplam, y: yuzde })}</p>
+        <p>${t('✓ {k} resim kaydedildi · {b} oyun için tam eşleşme yok', { k: d.kaydedilen, b: d.bulunamayan })}${d.hatalar.length ? t(' · {n} hata', { n: d.hatalar.length }) : ''}</p>
+        ${d.hatalar.length ? `<p class="hata">${d.hatalar.slice(0, 3).map(h => esc(sv(h))).join('<br>')}</p>` : ''}`;
+    }
+    if (!d.calisiyor) {
+      clearInterval(topluZaman);
+      $('#pencere').querySelectorAll('[data-t]').forEach(b => b.disabled = false);
+      if (d.asama === 'Bitti') { bildir(t('{n} oyuna resim eklendi', { n: d.kaydedilen })); sistemSec(sistem); }
+    }
+  };
+  guncelle(); topluZaman = setInterval(guncelle, 1000);
+}
+$('#eksikDugme').onclick = eksikResimler;
+
+// ---- Kopyalar: birebir aynı dosyanın birden çok yerdeki kopyaları ----
+let kopyaGruplar = null, kopyaZaman, kopyaGosterilen = 0;
+const KOPYA_SAYFA = 40;
+const kopyaResim = k => `/resim?s=${encodeURIComponent(k.s)}&id=${encodeURIComponent(k.id)}`;
+const kopyaHazirla = gruplar => gruplar.map(g => ({ ...g, atla: g.karar_sende }));
+
+async function kopyalarAc() {
+  const j = await api('/api/kopya');
+  if (j.durum.calisiyor) return kopyaIzle();
+  if (!j.gruplar) return kopyaTaraBaslat();
+  kopyaGruplar = kopyaHazirla(j.gruplar);
+  kopyaCiz();
+}
+async function kopyaTaraBaslat() {
+  try { await api('/api/kopya-tara', {}); } catch (e) { return bildir(e.message); }
+  kopyaIzle();
+}
+function kopyaIzle() {
+  perdeAc(`<div class="ust"><h2>${t('👯 Kopyalar')}</h2><button data-kapat>✕</button></div>
+    <div class="secici" id="kopyaDurum"></div>`, true);
+  clearInterval(kopyaZaman);
+  const guncelle = async () => {
+    const j = await api('/api/kopya'), d = j.durum, kutu = $('#kopyaDurum');
+    if (kutu) {
+      const yuzde = d.toplam ? Math.round(d.bakilan / d.toplam * 100) : 0;
+      kutu.innerHTML = `<div class="cubuk"><i style="width:${yuzde}%"></i></div>
+        <p>${esc(sv(d.asama))} — ${t('{a} / {t} (%{y})', { a: d.bakilan, t: d.toplam, y: yuzde })}</p>
+        ${d.tasinan != null ? `<p>${t('✓ {t} kopya çöpe taşındı · {a} oyuna resim/bilgi aktarıldı', { t: d.tasinan, a: d.aktarilan || 0 })}</p>` : ''}
+        ${d.hatalar.length ? `<p class="hata">${t('{n} hata:', { n: d.hatalar.length })}<br>${d.hatalar.slice(0, 5).map(h => esc(sv(h))).join('<br>')}</p>` : ''}
+        <p class="not">${t('İlk taramada tüm dosyaların imzası okunur (birkaç dakika sürebilir); sonrakiler hızlıdır.')}</p>`;
+    }
+    if (d.calisiyor) return;
+    clearInterval(kopyaZaman);
+    if (d.asama !== 'Bitti') return;
+    if (d.tasinan != null) { bildir(t('{n} kopya çöpe taşındı', { n: d.tasinan })); sistemleriYukle(); }
+    if (j.gruplar && $('#kopyaDurum')) { kopyaGruplar = kopyaHazirla(j.gruplar); kopyaCiz(); }
+  };
+  guncelle(); kopyaZaman = setInterval(guncelle, 1000);
+}
+
+function kopyaSuzulmus() {
+  const t = $('#kopyaTur')?.value || '*';
+  return kopyaGruplar.filter(g => t === '*' || g.tur === t);
+}
+function kopyaCiz() {
+  const turler = {};
+  kopyaGruplar.forEach(g => turler[g.tur] = (turler[g.tur] || 0) + 1);
+  const secili = $('#kopyaTur')?.value || '*';
+  perdeAc(`<div class="ust"><h2>${t('👯 Kopyalar — {n} grup', { n: kopyaGruplar.length })}</h2>
+      <button id="kopyaYenile" title="${t('Kartı yeniden tara')}">${t('↻ Yeniden tara')}</button><button data-kapat>✕</button></div>
+    <div class="kopyaUst">
+      <select id="kopyaTur"><option value="*">${t('Tüm türler ({n})', { n: kopyaGruplar.length })}</option>
+        ${Object.entries(turler).sort((a, b) => b[1] - a[1]).map(([tr, n]) => `<option value="${esc(tr)}" ${tr === secili ? 'selected' : ''}>${esc(sv(tr))} (${n})</option>`).join('')}
+      </select>
+      <span class="not">${DIL === 'en' ? EN['KOPYA_ACIKLAMA'] : `Birebir aynı dosyalar. Yeşil = kalacak; başka kopyayı tutmak için üzerine tıkla.
+        Kayıt dosyası (💾) birden çok kopyada olan gruplar sarıdır ve varsayılan olarak atlanır.`}</span>
+    </div>
+    <div id="kopyaListe">${kopyaGruplar.length ? '' : `<div class="bos">${t('Kartta birebir aynı kopya kalmadı ✓')}</div>`}</div>
+    <div id="kopyaDaha" style="height:30px"></div>
+    <div class="kopyaAlt"><span class="ozet" id="kopyaOzet"></span>
+      <button class="tehlike" id="kopyaUygula">${t('Önerileri uygula')}</button></div>`, true);
+  $('#kopyaTur').oninput = kopyaCiz;
+  $('#kopyaYenile').onclick = kopyaTaraBaslat;
+  kopyaGosterilen = 0; kopyaDahaCiz(); kopyaOzet();
+  new IntersectionObserver(e => { if (e[0].isIntersecting) kopyaDahaCiz(); }, { root: $('#pencere'), rootMargin: '600px' })
+    .observe($('#kopyaDaha'));
+  $('#kopyaListe').addEventListener('click', e => {
+    const gEl = e.target.closest('.grup'); if (!gEl) return;
+    const g = kopyaGruplar.find(x => x.no === +gEl.dataset.no);
+    if (e.target.matches('input[type=checkbox]')) g.atla = e.target.checked;
+    else { const k = e.target.closest('.kopya'); if (!k) return; g.tut = +k.dataset.n; g.atla = false; }
+    gEl.outerHTML = grupHtml(g); kopyaOzet();
+  });
+  const b = $('#kopyaUygula');
+  b.onclick = async () => {
+    const secilen = kopyaSuzulmus().filter(g => !g.atla);
+    if (!secilen.length) return;
+    if (!b.dataset.emin) { b.dataset.emin = 1; b.textContent = t('Emin misin? Tekrar tıkla'); return; }
+    const kararlar = secilen.map(g => ({ no: g.no, tut: [g.kopyalar[g.tut].s, g.kopyalar[g.tut].id],
+      sil: g.kopyalar.filter((_, n) => n !== g.tut).map(k => [k.s, k.id]) }));
+    try { await api('/api/kopya-uygula', { kararlar }); } catch (e) { return bildir(e.message); }
+    kopyaIzle();
+  };
+}
+function kopyaDahaCiz() {
+  const liste = kopyaSuzulmus(), parca = liste.slice(kopyaGosterilen, kopyaGosterilen + KOPYA_SAYFA);
+  $('#kopyaListe')?.insertAdjacentHTML('beforeend', parca.map(grupHtml).join(''));
+  kopyaGosterilen += parca.length;
+}
+function grupHtml(g) {
+  return `<div class="grup${g.atla ? ' atla' : ''}${g.karar_sende ? ' sende' : ''}" data-no="${g.no}">
+    <div class="baslik"><b>${esc(g.kopyalar[g.tut].ad)}</b><span>· ${esc(sv(g.tur))}</span>
+      <span class="neden">· ${g.karar_sende ? t('⚠ kayıt birden çok kopyada, sen seç') : t('öneri: ') + esc(sv(g.neden))}</span>
+      <label><input type="checkbox" ${g.atla ? 'checked' : ''}> ${t('Bu grubu atla')}</label></div>
+    <div class="kopyalar">${g.kopyalar.map((k, n) => `<div class="kopya${n === g.tut ? ' kalacak' : ''}" data-n="${n}" title="${esc(k.s + '/' + k.id)}">
+      <div class="res">${k.resim ? `<img loading="lazy" src="${kopyaResim(k)}" alt="">` : `<span class="yok">${t('resim yok')}</span>`}</div>
+      <span class="etiket">${n === g.tut ? t('KALACAK') : t('çöpe')}</span>
+      <div class="bilgi"><div class="sis">${esc(k.s)}</div><div class="yol">${esc(k.klasor ? k.klasor + '/' : '')}${esc(k.dosya)}</div>
+        <div class="rozetler">${k.kayit ? `<span>${t('💾 kayıt')}</span>` : ''}${k.oynama ? `<span>▶ ${k.oynama}</span>` : ''}${k.puan != null ? `<span>★ ${(k.puan * 10).toFixed(1)}</span>` : ''}<span>${boyutYaz(k.boyut)}</span></div></div></div>`).join('')}</div></div>`;
+}
+function kopyaOzet() {
+  const secilen = kopyaSuzulmus().filter(g => !g.atla);
+  const dosya = secilen.reduce((t, g) => t + g.kopyalar.length - 1, 0);
+  const yer = secilen.reduce((t, g) => t + g.kopyalar.reduce((a, k, n) => a + (n === g.tut ? 0 : k.boyut), 0), 0);
+  $('#kopyaOzet').textContent = t('{g} grup uygulanacak → {d} kopya çöpe ({b}). Çöpten geri alınabilir.', { g: secilen.length, d: dosya, b: boyutYaz(yer) });
+  const b = $('#kopyaUygula'); delete b.dataset.emin; b.textContent = t('Önerileri uygula'); b.disabled = !secilen.length;
+}
+$('#kopyaDugme').onclick = kopyalarAc;
+
+// Oyun klasörü seçimi: bulunan kart/diskler, işletim sisteminin klasör seçicisi ya da elle yol.
+async function klasorSec(uyari) {
+  perdeAc(`<div class="ust"><h2>${t('Oyun klasörünü seç')}</h2><button data-kapat>✕</button></div>
+    <div class="secici">
+      ${uyari ? `<p class="uyari">${esc(uyari)}</p>` : ''}
+      <h3>${t('Bu bilgisayarda bulunanlar')}</h3>
+      <div class="liste" id="adaylar"><span class="not">${t('Diskler taranıyor…')}</span></div>
+      <h3>${t('Başka bir klasör')}</h3>
+      <div class="satir"><input id="kokYol" value="${esc($('#kok').textContent)}" spellcheck="false">
+        <button id="gozat">${t('Gözat…')}</button><button class="birincil" id="kokAc">${t('Aç')}</button></div>
+      <p class="not">${t('Kartın kökünü ya da içinde nes, snes, gba… klasörleri olan "roms" klasörünü seç.')}</p>
+      <p class="hata" id="kokHata" hidden></p>
+    </div>`);
+  const ac = async yol => {
+    try { await api('/api/kok', { yol }); }
+    catch (e) { $('#kokHata').textContent = e.message; $('#kokHata').hidden = false; return; }
+    perdeKapat(); secim.clear(); history.replaceState(null, '', location.pathname);
+    $('#izgara').innerHTML = `<div class="bos">${t('Klasör taranıyor…')}</div>`;
+    sistemleriYukle();
+  };
+  $('#kokAc').onclick = () => ac($('#kokYol').value);
+  $('#kokYol').onkeydown = e => { if (e.key === 'Enter') ac($('#kokYol').value); };
+  $('#gozat').onclick = async () => {
+    $('#gozat').textContent = t('Pencere açıldı…'); $('#gozat').disabled = true;
+    const j = await api('/api/gozat', {}).catch(() => ({}));
+    if (!$('#gozat')) return;
+    $('#gozat').textContent = t('Gözat…'); $('#gozat').disabled = false;
+    if (j.yol) { $('#kokYol').value = j.yol; ac(j.yol); }
+  };
+  const adaylar = await api('/api/adaylar').catch(() => []);
+  if (!$('#adaylar')) return;
+  $('#adaylar').innerHTML = adaylar.length
+    ? adaylar.map(a => `<button data-yol="${esc(a.yol)}">${a.cikarilabilir ? '💾' : '🖴'} ${esc(a.yol)}<span>${t('{n} bilinen sistem klasörü', { n: a.sistem })}</span></button>`).join('')
+    : `<span class="not">${t('Oyun kartına benzeyen bir disk bulunamadı. Kartı takıp pencereyi yeniden aç ya da aşağıdan seç.')}</span>`;
+  $('#adaylar').onclick = e => { const b = e.target.closest('[data-yol]'); if (b) ac(b.dataset.yol); };
+}
+$('#kokDugme').onclick = () => klasorSec();
+
+['#ara', '#klasor', '#sirala', '#tutGizle', '#resimSuz'].forEach(s => $(s).addEventListener('input', ciz));
+$('#secSil').onclick = () => sil([...secim]);
+$('#secTut').onclick = () => tut([...secim], true);
+$('#secTemizle').onclick = () => { secim.clear(); document.querySelectorAll('.oyun.secili').forEach(k => k.classList.remove('secili')); sayacGuncelle(); };
+$('#secHepsi').onclick = () => { gorunen.forEach(o => secim.add(o.id)); document.querySelectorAll('.oyun').forEach(k => k.classList.add('secili')); sayacGuncelle(); };
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, select')) return;
+  if (e.key === 'Escape') { if (!$('#perde').hidden) perdeKapat(); else $('#secTemizle').click(); }
+  if (buyutecId) {
+    if (e.key === 'ArrowLeft') buyutecGit(-1);
+    if (e.key === 'ArrowRight') buyutecGit(1);
+    if (e.key === 'Delete') buyutecSil();
+    if (e.key === 't' || e.key === 'T') buyutecTut();
+    return;
+  }
+  if (!$('#perde').hidden) return;
+  if (e.key === 'Delete' && secim.size) sil([...secim]);
+  if ((e.key === 't' || e.key === 'T') && secim.size) tut([...secim], true);
+});
+
+// Yan yana oyun sayısı: seçilirse resimler ona göre büyür/küçülür (tarayıcıda hatırlanır).
+function sutunUygula(n) {
+  $('#izgara').classList.toggle('sabit', !!n);
+  $('#izgara').style.setProperty('--sutun', n || '');
+  $('#sutun').value = n || '';
+}
+$('#sutun').onchange = e => { sutunUygula(e.target.value); try { localStorage.setItem('sutun', e.target.value); } catch {} };
+statikCevir();
+sutunUygula((() => { try { return localStorage.getItem('sutun'); } catch { return null; } })());
+$('#izgara').innerHTML = `<div class="bos">${t('Kart taranıyor… (ilk açılışta 10–20 sn sürebilir)')}</div>`;
+sistemleriYukle();
+</script>
+</body>
+</html>
