@@ -25,11 +25,27 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlparse
 from urllib.request import Request, urlopen
 
-BURASI = Path(__file__).resolve().parent
+PAKET = getattr(sys, "frozen", False)  # PyInstaller ile tek dosya .exe
+BURASI = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 WINDOWS = os.name == "nt"
 MAC = sys.platform == "darwin"
-# Uygulama verisi (işaretler, önbellekler, son seçilen klasör) deponun kökündeki veri/ klasöründe.
-VERI = Path(os.environ.get("OYUN_VERI", BURASI.parent / "veri"))
+
+
+def veri_klasoru() -> Path:
+    """Uygulama verisi (işaretler, önbellekler, son seçilen klasör): kaynak koddan çalışırken deponun kökündeki
+    veri/, .exe'de exe'nin yanındaki veri/; oraya yazılamıyorsa (Program Files vb.) kullanıcı klasörü."""
+    if os.environ.get("OYUN_VERI"):
+        return Path(os.environ["OYUN_VERI"])
+    aday = (Path(sys.executable).resolve().parent if PAKET else BURASI.parent) / "veri"
+    try:
+        aday.mkdir(parents=True, exist_ok=True)
+        (aday / ".yazilabilir").touch()
+        return aday
+    except OSError:
+        return Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "ROM Sorter"
+
+
+VERI = veri_klasoru()
 VERI.mkdir(parents=True, exist_ok=True)
 SECILMEDI = "(?)"  # klasör henüz seçilmedi: var olmayan bir yol, arayüz seçiciyi açar
 VARSAYILAN_KOK = os.environ.get("OYUN_KOK", SECILMEDI)
@@ -1013,6 +1029,20 @@ if __name__ == "__main__":
         adaylar = aday_klasorler()
         if adaylar:  # ilk açılış ya da kart başka harfle takılı: bulunan ilk kartı kullan
             kok_degistir(adaylar[0]["yol"])
+    adres = f"http://{HOST}:{PORT}"
+    try:
+        sunucu = ThreadingHTTPServer((HOST, PORT), Isleyici)
+    except OSError:  # port dolu: büyük olasılıkla uygulama zaten açık; tarayıcıda onu aç
+        print(f"Already running? / Zaten açık mı?  ->  {adres}", flush=True)
+        if PAKET:
+            import webbrowser
+            webbrowser.open(adres)
+            time.sleep(5)
+        sys.exit(1)
     print(f"ROM folder / Oyun klasörü: {KOK if KOK.is_dir() else '-'}", flush=True)
-    print(f"\n    Open / Aç:  http://{HOST}:{PORT}\n", flush=True)
-    ThreadingHTTPServer((HOST, PORT), Isleyici).serve_forever()
+    print(f"\n    Open / Aç:  {adres}\n", flush=True)
+    if PAKET:  # .exe çift tıkla açıldı: tarayıcıyı da aç; pencere kapanınca uygulama kapanır
+        print("    Close this window to quit. / Kapatmak için bu pencereyi kapatın.\n", flush=True)
+        import webbrowser
+        threading.Timer(1.0, webbrowser.open, (adres,)).start()
+    sunucu.serve_forever()

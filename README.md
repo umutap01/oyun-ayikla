@@ -23,31 +23,47 @@ decide quickly what to keep and what to delete.
 
 ![Zoom view](docs/zoom.png)
 
-## Requirements
+## Download & run
 
-- Python **3.10+** and [Pillow](https://pypi.org/project/pillow/) (installed automatically by the launchers)
-- Windows, macOS or Linux; the SD card in a card reader
-- Internet only for online images
+### Windows — no install needed
 
-## Run
+1. Download **ROM-Sorter.exe** from the [latest release](https://github.com/umutap01/oyun-ayikla/releases/latest).
+2. Put the SD card in a card reader and double-click `ROM-Sorter.exe`.
+3. Windows may show *"Windows protected your PC"* (the app is not code-signed):
+   click **More info → Run anyway**.
+4. Your browser opens **http://127.0.0.1:8736**. The inserted card is found automatically;
+   otherwise click **Choose folder**.
 
-```
-git clone https://github.com/umutap01/oyun-ayikla.git
-cd oyun-ayikla
-```
+A black window stays open while the app runs — **closing it quits the app**. Your marks and settings are
+kept in a `veri` folder next to the exe.
 
-- **Windows:** double-click `baslat.bat`
-- **macOS / Linux:** `sh baslat.sh`
-- or manually: `pip install -r requirements.txt` then `python src/sunucu.py [ROM_FOLDER]`
+### macOS / Linux (or Windows with Python)
 
-Then open **http://127.0.0.1:8736**. The first inserted card is detected automatically; otherwise use
-**Choose folder** (the card root or the `roms` folder that contains `nes`, `snes`, `gba`… folders).
+1. Install **Python 3.10+** from [python.org](https://www.python.org/downloads/)
+   (Windows: tick **"Add python.exe to PATH"** in the installer).
+2. Download this project: green **Code** button → **Download ZIP**, then unzip it
+   (or `git clone https://github.com/umutap01/oyun-ayikla.git`).
+3. Start it:
+   - **Windows:** double-click `baslat.bat`
+   - **macOS:** open *Terminal*, type `sh ` (with a space), drag `baslat.sh` into the window, press Enter
+   - **Linux:** `sh baslat.sh` (on Debian/Ubuntu install Pillow first: `sudo apt install python3-pil`)
+4. Open **http://127.0.0.1:8736**.
 
-App data (kept marks, caches, last folder) is stored in `veri/` next to the code, not on the card.
-The server listens on `127.0.0.1` only.
+Manual start: `pip install -r requirements.txt` then `python src/sunucu.py [ROM_FOLDER]`.
 
 > **Back up your card first.** The app moves and writes files on the card (trash, images, `gamelist.xml`;
 > each gamelist is backed up as `gamelist.xml.yedek-…` before writing). No ROMs are included or downloaded.
+> The server listens on `127.0.0.1` only.
+
+### Troubleshooting
+
+- **Card not listed:** use *Choose folder → Browse…* and pick the folder that contains `nes`, `snes`, `gba`…
+  If the card does not appear in Explorer/Finder at all, its game partition may be Linux-formatted (ext4)
+  and your computer cannot read it.
+- **Page does not open:** make sure the black window (or terminal) is still open, then go to
+  http://127.0.0.1:8736 yourself.
+- **Antivirus blocks the exe:** single-file Python apps are sometimes flagged by mistake. Use the
+  Python way above, or build the exe yourself with `build_exe.bat`.
 
 ---
 
@@ -62,8 +78,12 @@ yılıyla gösterip **ayıklamaya** yarayan küçük yerel web uygulaması.
 - Eksik resimleri toplu indirme, birebir aynı kopyaları bulma, yan yana oyun sayısı, arama/sıralama/süzme
 - Arayüz Türkçe ve İngilizce (sağ üstteki TR/EN)
 
-**Çalıştırma:** Python 3.10+ kurulu olmalı. Windows'ta `baslat.bat`, macOS/Linux'ta `sh baslat.sh`;
-ardından **http://127.0.0.1:8736**. Takılı kart kendiliğinden bulunur, bulunmazsa "Klasör seç".
+**Windows'ta kurulum gerekmez:** [son sürümden](https://github.com/umutap01/oyun-ayikla/releases/latest)
+**ROM-Sorter.exe**'yi indir, kartı tak, çift tıkla. "Windows bilgisayarınızı korudu" çıkarsa
+**Ek bilgi → Yine de çalıştır**. Tarayıcı kendiliğinden **http://127.0.0.1:8736** adresini açar;
+siyah pencere kapanınca uygulama da kapanır.
+
+**macOS / Linux:** Python 3.10+ kur, yeşil **Code → Download ZIP** ile indirip aç, `sh baslat.sh`.
 
 > **Önce kartın yedeğini al.** Uygulama kartta dosya taşır ve yazar. ROM içermez, ROM indirmez.
 
